@@ -18,6 +18,13 @@ fn main() {
         WindowSettings::new("Connect 4", [640, 480])
             .exit_on_esc(true).build().unwrap();
     while let Some(event) = window.next() {
+
+        if let Some(Button::Mouse(button)) = event.press_args() {
+            if button == MouseButton::Left {
+                println!("lmb pressed");
+            }
+        }
+
         window.draw_2d(&event, |context, graphics, _device| {
             clear([1.0; 4], graphics);
 
@@ -26,7 +33,7 @@ fn main() {
                     let x_origin = 5.0 + (column_index as f64) * 55.0;
                     let y_origin = 5.0 + (row_index as f64) * 55.0;
 
-                    rectangle(process_colour(state[row_index][column_index]), // red
+                    rectangle(process_colour(state[row_index][column_index]),
                               [x_origin, y_origin, 50.0, 50.0],
                               context.transform,
                               graphics);
