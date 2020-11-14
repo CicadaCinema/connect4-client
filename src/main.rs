@@ -12,7 +12,7 @@ fn process_colour(input_colour:i32) -> [f32; 4] {
     }
 }
 
-fn process_mouse_click(mut state: [[i32; 7]; 6], mouse_coords: [f64; 2]) -> [[i32; 7]; 6]{
+fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) {
     let mut click_indexes: [i32; 2] = [-1, -1];
     let mut valid_click = true;
 
@@ -43,8 +43,6 @@ fn process_mouse_click(mut state: [[i32; 7]; 6], mouse_coords: [f64; 2]) -> [[i3
     if valid_click {
         state[click_indexes[1] as usize][click_indexes[0] as usize] = 1 - state[click_indexes[1] as usize][click_indexes[0] as usize];
     }
-
-    state
 }
 
 fn main() {
@@ -69,7 +67,7 @@ fn main() {
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
-                state = process_mouse_click(state, mouse_coords);
+                process_mouse_click(&mut state, mouse_coords);
             }
         }
 
