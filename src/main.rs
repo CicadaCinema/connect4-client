@@ -42,7 +42,7 @@ fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> Str
     }
 
     //println!("lmb pressed at {:?}", mouse_coords);
-    //println!("that'll be {:?}", click_indexes);
+    //println!("indexes are {:?}", click_indexes);
     //println!("valid? {}", valid_click);
 
     // toggle the colour of this cell
@@ -67,10 +67,8 @@ fn main() {
 
     // launch networking thread
     thread::spawn(move || {
-
-
-        // server ip - 165.232.32.238
-        // local - localhost
+        // server ip: 165.232.32.238
+        // local testing: localhost
         match TcpStream::connect("localhost:32032") {
             Ok(mut stream) => {
                 println!("Successfully connected to server in port 32032");
@@ -86,11 +84,6 @@ fn main() {
                     }
                 }
 
-                // if I am 1, send a message first!
-                // then loop:
-                //      read data, print it out
-                //      get user input, write that data
-
                 if self_id[0] == 49 {
                     println!("Initial message:");
 
@@ -102,9 +95,9 @@ fn main() {
                         }
                     }
 
-                    let msg = rx.recv().unwrap();
+                    let msg: String = rx.recv().unwrap();
                     println!("Got: {:?}", msg);
-                    stream.write(msg).unwrap();
+                    stream.write(msg.as_bytes()).unwrap();
                 }
 
                 loop {
@@ -112,7 +105,7 @@ fn main() {
                     match stream.read_exact(&mut data) {
                         Ok(_) => {
                             let text = from_utf8(&data).unwrap();
-                            println!("Received: {}", text);
+                            println!("RECEIVED MESSAGE FROM OTHER PLAYER: {}", text);
                         },
                         Err(e) => {
                             println!("Failed to receive data: {}", e);
@@ -129,9 +122,9 @@ fn main() {
                         }
                     }
 
-                    let msg = rx.recv().unwrap();
+                    let msg: String = rx.recv().unwrap();
                     println!("Got: {:?}", msg);
-                    stream.write(msg).unwrap();
+                    stream.write(msg.as_bytes()).unwrap();
                 }
             },
             Err(e) => {
@@ -157,8 +150,7 @@ fn main() {
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
-                println!("{:?}", process_mouse_click(&mut state, mouse_coords));
-                tx.send(b"i").unwrap();
+                tx.send(process_mouse_click(&mut state, mouse_coords)).unwrap();
             }
         }
 
