@@ -1,6 +1,12 @@
 extern crate piston_window;
 
 use piston_window::*;
+use std::{thread, time};
+use std::sync::mpsc;
+use std::net::{TcpStream};
+use std::io::{self, Read, Write};
+use std::str::from_utf8;
+use std::sync::mpsc::TryRecvError;
 
 // returns an rgba array from integer input using a predefined colour scheme
 fn process_colour(input_colour:i32) -> [f32; 4] {
@@ -12,7 +18,7 @@ fn process_colour(input_colour:i32) -> [f32; 4] {
     }
 }
 
-fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) {
+fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> String {
     let mut click_indexes: [i32; 2] = [-1, -1];
     let mut valid_click = true;
 
@@ -35,13 +41,19 @@ fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) {
         }
     }
 
-    println!("lmb pressed at {:?}", mouse_coords);
-    println!("that'll be {:?}", click_indexes);
-    println!("valid? {}", valid_click);
+    //println!("lmb pressed at {:?}", mouse_coords);
+    //println!("that'll be {:?}", click_indexes);
+    //println!("valid? {}", valid_click);
 
     // toggle the colour of this cell
     if valid_click {
         state[click_indexes[1] as usize][click_indexes[0] as usize] = 1 - state[click_indexes[1] as usize][click_indexes[0] as usize];
+    }
+
+    if valid_click {
+        click_indexes[0].to_string()
+    } else {
+        "_".to_string()
     }
 }
 
@@ -50,6 +62,84 @@ fn main() {
     let mut state = [[0; 7]; 6];
     // holds the latest mouse co-ordinates
     let mut mouse_coords = [0.0; 2];
+
+    let (tx, rx) = mpsc::channel();
+
+    // launch networking thread
+    thread::spawn(move || {
+
+
+        // server ip - 165.232.32.238
+        // local - localhost
+        match TcpStream::connect("localhost:32032") {
+            Ok(mut stream) => {
+                println!("Successfully connected to server in port 32032");
+
+                let mut self_id = [0 as u8; 1];
+                match stream.read_exact(&mut self_id) {
+                    Ok(_) => {
+                        let text = from_utf8(&self_id).unwrap();
+                        println!("My self id: {}", text);
+                    },
+                    Err(e) => {
+                        println!("Failed to receive data: {}", e);
+                    }
+                }
+
+                // if I am 1, send a message first!
+                // then loop:
+                //      read data, print it out
+                //      get user input, write that data
+
+                if self_id[0] == 49 {
+                    println!("Initial message:");
+
+                    // clear the stream!
+                    loop {
+                        match rx.try_recv() {
+                            Ok(..) => {},
+                            Err(..) => {break},
+                        }
+                    }
+
+                    let msg = rx.recv().unwrap();
+                    println!("Got: {:?}", msg);
+                    stream.write(msg).unwrap();
+                }
+
+                loop {
+                    let mut data = [0 as u8; 1]; // using 1 byte buffer
+                    match stream.read_exact(&mut data) {
+                        Ok(_) => {
+                            let text = from_utf8(&data).unwrap();
+                            println!("Received: {}", text);
+                        },
+                        Err(e) => {
+                            println!("Failed to receive data: {}", e);
+                        }
+                    }
+
+                    println!("Message:");
+
+                    // clear the stream!
+                    loop {
+                        match rx.try_recv() {
+                            Ok(..) => {},
+                            Err(..) => {break},
+                        }
+                    }
+
+                    let msg = rx.recv().unwrap();
+                    println!("Got: {:?}", msg);
+                    stream.write(msg).unwrap();
+                }
+            },
+            Err(e) => {
+                println!("Failed to connect: {}", e);
+            }
+        }
+        println!("Terminated.");
+    });
 
     // set up Piston Window
     let mut window: PistonWindow =
@@ -67,7 +157,8 @@ fn main() {
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
-                process_mouse_click(&mut state, mouse_coords);
+                println!("{:?}", process_mouse_click(&mut state, mouse_coords));
+                tx.send(b"i").unwrap();
             }
         }
 
