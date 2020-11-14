@@ -63,7 +63,8 @@ fn main() {
     // holds the latest mouse co-ordinates
     let mut mouse_coords = [0.0; 2];
 
-    let (tx, rx) = mpsc::channel();
+    let (tx_server_client, rx_server_client) = mpsc::channel();
+    let (tx_client_canvas, rx_client_canvas) = mpsc::channel();
 
     // launch networking thread
     thread::spawn(move || {
@@ -89,23 +90,25 @@ fn main() {
 
                     // clear the stream!
                     loop {
-                        match rx.try_recv() {
+                        match rx_server_client.try_recv() {
                             Ok(..) => {},
                             Err(..) => {break},
                         }
                     }
 
-                    let msg: String = rx.recv().unwrap();
+                    let msg: String = rx_server_client.recv().unwrap();
                     println!("Got: {:?}", msg);
                     stream.write(msg.as_bytes()).unwrap();
                 }
 
                 loop {
-                    let mut data = [0 as u8; 1]; // using 1 byte buffer
+                    let mut data = [0 as u8; 1];
                     match stream.read_exact(&mut data) {
                         Ok(_) => {
-                            let text = from_utf8(&data).unwrap();
-                            println!("RECEIVED MESSAGE FROM OTHER PLAYER: {}", text);
+                            // TODO: clean this up
+                            //let text = from_utf8(&data).unwrap();
+                            //println!("RECEIVED MESSAGE FROM OTHER PLAYER: {}", text);
+                            tx_client_canvas.send(data);
                         },
                         Err(e) => {
                             println!("Failed to receive data: {}", e);
@@ -116,13 +119,13 @@ fn main() {
 
                     // clear the stream!
                     loop {
-                        match rx.try_recv() {
-                            Ok(..) => {},
-                            Err(..) => {break},
+                        match rx_server_client.try_recv() {
+                            Ok(T) => {},
+                            Err(E) => {break},
                         }
                     }
 
-                    let msg: String = rx.recv().unwrap();
+                    let msg: String = rx_server_client.recv().unwrap();
                     println!("Got: {:?}", msg);
                     stream.write(msg.as_bytes()).unwrap();
                 }
@@ -150,8 +153,20 @@ fn main() {
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
-                tx.send(process_mouse_click(&mut state, mouse_coords)).unwrap();
+                tx_server_client.send(process_mouse_click(&mut state, mouse_coords)).unwrap();
             }
+        }
+
+        // handle incoming state change
+        match rx_client_canvas.try_recv() {
+            // if there is a value waiting in the stream, act on it
+            // if not, go ahead and draw existing state
+            Ok(T) => {
+                // TODO: this is a mess
+                let something = from_utf8(&T).unwrap();
+                state[0][something.parse::<usize>().unwrap()] = 1 - state[0][something.parse::<usize>().unwrap()];
+            },
+            Err(E) => {},
         }
 
         // draw window and objects/sprites
