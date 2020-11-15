@@ -45,11 +45,6 @@ fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> Str
     //println!("indexes are {:?}", click_indexes);
     //println!("valid? {}", valid_click);
 
-    // toggle the colour of this cell
-    if valid_click {
-        state[click_indexes[1] as usize][click_indexes[0] as usize] = 1 - state[click_indexes[1] as usize][click_indexes[0] as usize];
-    }
-
     if valid_click {
         click_indexes[0].to_string()
     } else {
@@ -71,11 +66,11 @@ fn main() {
         // server ip: 165.232.32.238
         // local testing: localhost
         match TcpStream::connect("localhost:32032") {
-            Ok(mut stream) => {
+            Ok(mut network_stream) => {
                 println!("Successfully connected to server in port 32032");
 
                 let mut self_id = [0 as u8; 1];
-                match stream.read_exact(&mut self_id) {
+                match network_stream.read_exact(&mut self_id) {
                     Ok(_) => {
                         let text = from_utf8(&self_id).unwrap();
                         println!("My self id: {}", text);
@@ -98,12 +93,12 @@ fn main() {
 
                     let msg: String = rx_server_client.recv().unwrap();
                     println!("Got: {:?}", msg);
-                    stream.write(msg.as_bytes()).unwrap();
+                    network_stream.write(msg.as_bytes()).unwrap();
                 }
 
                 loop {
-                    let mut data = [0 as u8; 1];
-                    match stream.read_exact(&mut data) {
+                    let mut data = [0 as u8; 3];
+                    match network_stream.read_exact(&mut data) {
                         Ok(_) => {
                             // TODO: clean this up
                             //let text = from_utf8(&data).unwrap();
@@ -127,9 +122,9 @@ fn main() {
 
                     let msg: String = rx_server_client.recv().unwrap();
                     println!("Got: {:?}", msg);
-                    stream.write(msg.as_bytes()).unwrap();
+                    network_stream.write(msg.as_bytes()).unwrap();
                 }
-            },
+            }
             Err(e) => {
                 println!("Failed to connect: {}", e);
             }
@@ -163,8 +158,8 @@ fn main() {
             // if not, go ahead and draw existing state
             Ok(T) => {
                 // TODO: this is a mess
-                let something = from_utf8(&T).unwrap();
-                state[0][something.parse::<usize>().unwrap()] = 1 - state[0][something.parse::<usize>().unwrap()];
+                // not as much of a mess now...
+                state[T[0] as usize][T[1] as usize] = T[2] as i32;
             },
             Err(E) => {},
         }
