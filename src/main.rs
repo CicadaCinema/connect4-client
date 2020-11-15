@@ -18,7 +18,7 @@ fn process_colour(input_colour:i32) -> [f32; 4] {
     }
 }
 
-fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> String {
+fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> (bool, u8) {
     let mut click_indexes: [i32; 2] = [-1, -1];
     let mut valid_click = true;
 
@@ -46,9 +46,9 @@ fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> Str
     //println!("valid? {}", valid_click);
 
     if valid_click {
-        click_indexes[0].to_string()
+        (true, click_indexes[0] as u8)
     } else {
-        "_".to_string()
+        (false, 0)
     }
 }
 
@@ -63,12 +63,16 @@ fn main() {
 
     // launch networking thread
     thread::spawn(move || {
+        // stores data received from stream
+        let mut data = [0 as u8; 3];
+
         // server ip: 165.232.32.238
         // local testing: localhost
         match TcpStream::connect("localhost:32032") {
             Ok(mut network_stream) => {
                 println!("Successfully connected to server in port 32032");
 
+                // find out whether this is player 1 or 2
                 let mut self_id = [0 as u8; 1];
                 match network_stream.read_exact(&mut self_id) {
                     Ok(_) => {
@@ -81,8 +85,6 @@ fn main() {
                 }
 
                 if self_id[0] == 49 {
-                    println!("Initial message:");
-
                     // clear the stream!
                     loop {
                         match rx_server_client.try_recv() {
@@ -91,13 +93,45 @@ fn main() {
                         }
                     }
 
-                    let msg: String = rx_server_client.recv().unwrap();
-                    println!("Got: {:?}", msg);
-                    network_stream.write(msg.as_bytes()).unwrap();
+                    let msg: [u8; 1] = [rx_server_client.recv().unwrap()];
+                    //println!("Got: {:?}", msg);
+                    network_stream.write(&msg).unwrap();
+
+                    data = [0 as u8; 3];
+                    match network_stream.read_exact(&mut data) {
+                        Ok(_) => {
+                            tx_client_canvas.send(data);
+                        },
+                        Err(e) => {
+                            println!("Failed to receive data: {}", e);
+                        }
+                    }
                 }
 
                 loop {
-                    let mut data = [0 as u8; 3];
+                    data = [0 as u8; 3];
+                    match network_stream.read_exact(&mut data) {
+                        Ok(_) => {
+                            tx_client_canvas.send(data);
+                        },
+                        Err(e) => {
+                            println!("Failed to receive data: {}", e);
+                        }
+                    }
+
+                    // clear the stream!
+                    loop {
+                        match rx_server_client.try_recv() {
+                            Ok(T) => {},
+                            Err(E) => {break},
+                        }
+                    }
+
+                    let msg: [u8; 1] = [rx_server_client.recv().unwrap()];
+                    //println!("Got: {:?}", msg);
+                    network_stream.write(&msg).unwrap();
+
+                    data = [0 as u8; 3];
                     match network_stream.read_exact(&mut data) {
                         Ok(_) => {
                             // TODO: clean this up
@@ -109,20 +143,6 @@ fn main() {
                             println!("Failed to receive data: {}", e);
                         }
                     }
-
-                    println!("Message:");
-
-                    // clear the stream!
-                    loop {
-                        match rx_server_client.try_recv() {
-                            Ok(T) => {},
-                            Err(E) => {break},
-                        }
-                    }
-
-                    let msg: String = rx_server_client.recv().unwrap();
-                    println!("Got: {:?}", msg);
-                    network_stream.write(msg.as_bytes()).unwrap();
                 }
             }
             Err(e) => {
@@ -148,7 +168,10 @@ fn main() {
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
-                tx_server_client.send(process_mouse_click(&mut state, mouse_coords)).unwrap();
+                let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
+                if valid_click{
+                    tx_server_client.send(click_column).unwrap();
+                }
             }
         }
 
@@ -160,6 +183,7 @@ fn main() {
                 // TODO: this is a mess
                 // not as much of a mess now...
                 state[T[0] as usize][T[1] as usize] = T[2] as i32;
+                println!("GOTTTT  {:?}", T);
             },
             Err(E) => {},
         }
