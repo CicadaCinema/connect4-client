@@ -80,7 +80,7 @@ fn main() {
                         println!("My self id: {}", text);
                     },
                     Err(e) => {
-                        println!("Failed to receive data: {}", e);
+                        println!("Failed to receive data from network (0): {}", e);
                     }
                 }
 
@@ -103,7 +103,7 @@ fn main() {
                             tx_client_canvas.send(data);
                         },
                         Err(e) => {
-                            println!("Failed to receive data: {}", e);
+                            println!("Failed to receive data from network (1): {}", e);
                         }
                     }
                 }
@@ -115,7 +115,7 @@ fn main() {
                             tx_client_canvas.send(data);
                         },
                         Err(e) => {
-                            println!("Failed to receive data: {}", e);
+                            println!("Failed to receive data from network (2): {}", e);
                         }
                     }
 
@@ -140,7 +140,7 @@ fn main() {
                             tx_client_canvas.send(data);
                         },
                         Err(e) => {
-                            println!("Failed to receive data: {}", e);
+                            println!("Failed to receive data from network (3): {}", e);
                         }
                     }
                 }
@@ -169,7 +169,7 @@ fn main() {
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
                 let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
-                if valid_click{
+                if valid_click && state[0][click_column as usize]==0 {
                     tx_server_client.send(click_column).unwrap();
                 }
             }
@@ -177,14 +177,12 @@ fn main() {
 
         // handle incoming state change
         match rx_client_canvas.try_recv() {
-            // if there is a value waiting in the stream, act on it
-            // if not, go ahead and draw existing state
+            // if there is a value waiting in the stream, act on it (modify state)
             Ok(T) => {
-                // TODO: this is a mess
-                // not as much of a mess now...
                 state[T[0] as usize][T[1] as usize] = T[2] as i32;
-                println!("GOTTTT  {:?}", T);
+                println!("Got new instruction {:?}", T);
             },
+            // if not, do nothing
             Err(E) => {},
         }
 
