@@ -190,7 +190,8 @@ fn main() {
                 let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
                 // if all is well, and the clicked column isn't full yet, go ahead and send the column id to the server
                 if valid_click && state[0][click_column as usize]==0 {
-                    tx_server_client.send(click_column).unwrap();
+                    // add one to click_column to enable server to know when a client is dead
+                    tx_server_client.send(click_column + 1).unwrap();
                 }
             }
         }
