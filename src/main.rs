@@ -7,6 +7,7 @@ use std::net::{TcpStream};
 use std::io::{self, Read, Write};
 use std::str::from_utf8;
 use std::sync::mpsc::TryRecvError;
+use std::env::current_dir;
 
 // returns an rgba array from integer input using a predefined colour scheme
 fn process_colour(input_colour:i32) -> [f32; 4] {
@@ -53,10 +54,14 @@ fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> (bo
 }
 
 fn main() {
-    // holds the state of the game board
+    // the state of the game board
     let mut state = [[0; 7]; 6];
-    // holds the latest mouse co-ordinates
+    // the latest mouse co-ordinates
     let mut mouse_coords = [0.0; 2];
+    // user's player id
+    let mut self_player_id = 0;
+    // info text below game board
+    let mut info_text = (0, "Waiting to start...");
 
     let (tx_server_client, rx_server_client) = mpsc::channel();
     let (tx_client_canvas, rx_client_canvas) = mpsc::channel();
@@ -77,7 +82,17 @@ fn main() {
                 match network_stream.read_exact(&mut self_id) {
                     Ok(_) => {
                         let text = from_utf8(&self_id).unwrap();
-                        println!("My self id: {}", text);
+                        // TODO: sending strings is kind of messy - is it possible to send player id as an array?
+                        // send this over to the main thread so it can update the turn indicator
+                        match text {
+                            "1" => {
+                                tx_client_canvas.send([1 as u8; 3]);
+                            }
+                            "2" => {
+                                tx_client_canvas.send([2 as u8; 3]);
+                            }
+                            _ => {}
+                        }
                     },
                     Err(e) => {
                         println!("Failed to receive data from network (0): {}", e);
@@ -154,8 +169,11 @@ fn main() {
 
     // set up Piston Window
     let mut window: PistonWindow =
-        WindowSettings::new("Connect 4", [640, 480])
+        WindowSettings::new("Connect 4", [5 + 55*7, 480])
             .exit_on_esc(true).build().unwrap();
+
+    // load font
+    let mut glyphs = window.load_font("RobotoSlab-Regular.ttf").unwrap();
 
     // update/event loop - this seems to run regardless of user input
     while let Some(event) = window.next() {
@@ -168,7 +186,9 @@ fn main() {
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
             if button == MouseButton::Left {
+                // process coords to get these two important facts
                 let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
+                // if all is well, and the clicked column isn't full yet, go ahead and send the column id to the server
                 if valid_click && state[0][click_column as usize]==0 {
                     tx_server_client.send(click_column).unwrap();
                 }
@@ -179,8 +199,31 @@ fn main() {
         match rx_client_canvas.try_recv() {
             // if there is a value waiting in the stream, act on it (modify state)
             Ok(T) => {
-                state[T[0] as usize][T[1] as usize] = T[2] as i32;
-                println!("Got new instruction {:?}", T);
+                // first command is always an acknowledgement of self player id
+                if self_player_id == 0{
+                    // set self player id based on data received from server
+                    self_player_id = T[0];
+                    // set turn indicator colour to match player colour
+                    info_text.0 = T[0] as i32;
+                    // set turn indicator for the first time
+                    info_text.1 = match self_player_id {
+                        1 => {"Your turn"}
+                        2 => {"Opponent's turn"}
+                        _ => {"Error_P0"}
+                    }
+                } else {
+                    // apply new instruction to playing field (state)
+                    state[T[0] as usize][T[1] as usize] = T[2] as i32;
+                    println!("Got new instruction {:?}", T);
+
+                    // TODO: is there a better way to do this?
+                    // update turn indicator (the reverse of current value)
+                    info_text.1 = match info_text.1 {
+                        "Opponent's turn" => {"Your turn"}
+                        "Your turn" => {"Opponent's turn"}
+                        _ => {"Error_P1"}
+                    }
+                }
             },
             // if not, do nothing
             Err(E) => {},
@@ -205,6 +248,18 @@ fn main() {
                               graphics);
                 }
             }
+
+            // display turn indicator with the correct colour and text
+            text(
+                process_colour(info_text.0), 32,
+                info_text.1,
+                &mut glyphs,
+                context.transform.trans(10.0, 400.0),
+                graphics
+            ).unwrap();
+
+            // update glyphs before rendering.
+            glyphs.factory.encoder.flush(_device);
         });
     }
 }
