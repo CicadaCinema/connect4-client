@@ -62,6 +62,7 @@ fn main() {
     let mut self_player_id = 0;
     // info text below game board
     let mut info_text = (0, "Waiting to start...");
+    let mut game_over = false;
 
     let (tx_server_client, rx_server_client) = mpsc::channel();
     let (tx_client_canvas, rx_client_canvas) = mpsc::channel();
@@ -185,7 +186,8 @@ fn main() {
 
         // handle mouse click
         if let Some(Button::Mouse(button)) = event.press_args() {
-            if button == MouseButton::Left {
+            // if game is over, don't even try to process this input
+            if button == MouseButton::Left && !game_over {
                 // process coords to get these two important facts
                 let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
                 // if all is well, and the clicked column isn't full yet, go ahead and send the column id to the server
@@ -201,7 +203,7 @@ fn main() {
             // if there is a value waiting in the stream, act on it (modify state)
             Ok(T) => {
                 // first command is always an acknowledgement of self player id
-                if self_player_id == 0{
+                if self_player_id == 0 {
                     // set self player id based on data received from server
                     self_player_id = T[0];
                     // set turn indicator colour to match player colour
@@ -214,15 +216,23 @@ fn main() {
                     }
                 } else {
                     // apply new instruction to playing field (state)
-                    state[T[0] as usize][T[1] as usize] = T[2] as i32;
+                    state[T[0] as usize][T[1] as usize] = T[2] as i32 % 3;
                     println!("Got new instruction {:?}", T);
 
-                    // TODO: is there a better way to do this?
-                    // update turn indicator (the reverse of current value)
-                    info_text.1 = match info_text.1 {
-                        "Opponent's turn" => {"Your turn"}
-                        "Your turn" => {"Opponent's turn"}
-                        _ => {"Error_P1"}
+                    if T[2]>2 {
+                        // someone won! - check who won
+                        info_text.1 = match (T[2] - 3) == self_player_id {
+                            true => {"You won!"}
+                            false => {"You lost!"}
+                        }
+                    } else {
+                        // TODO: is there a better way to do this?
+                        // nobody won yet - update turn indicator (the reverse of current value)
+                        info_text.1 = match info_text.1 {
+                            "Opponent's turn" => {"Your turn"}
+                            "Your turn" => {"Opponent's turn"}
+                            _ => {"Error_P1"}
+                        }
                     }
                 }
             },
