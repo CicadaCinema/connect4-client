@@ -1,13 +1,11 @@
 extern crate piston_window;
 
 use piston_window::*;
-use std::{thread, time};
+use std::thread;
 use std::sync::mpsc;
 use std::net::{TcpStream};
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 use std::str::from_utf8;
-use std::sync::mpsc::TryRecvError;
-use std::env::current_dir;
 
 // returns an rgba array from integer input using a predefined colour scheme
 fn process_colour(input_colour:i32) -> [f32; 4] {
@@ -83,7 +81,6 @@ fn main() {
                 match network_stream.read_exact(&mut self_id) {
                     Ok(_) => {
                         let text = from_utf8(&self_id).unwrap();
-                        // TODO: sending strings is kind of messy - is it possible to send player id as an array?
                         // send this over to the main thread so it can update the turn indicator
                         match text {
                             "1" => {
@@ -104,8 +101,8 @@ fn main() {
                     // clear the stream!
                     loop {
                         match rx_server_client.try_recv() {
-                            Ok(..) => {},
-                            Err(..) => {break},
+                            Ok(_) => {},
+                            Err(_) => {break},
                         }
                     }
 
@@ -138,8 +135,8 @@ fn main() {
                     // clear the stream!
                     loop {
                         match rx_server_client.try_recv() {
-                            Ok(T) => {},
-                            Err(E) => {break},
+                            Ok(_) => {},
+                            Err(_) => {break},
                         }
                     }
 
@@ -150,9 +147,6 @@ fn main() {
                     data = [0 as u8; 3];
                     match network_stream.read_exact(&mut data) {
                         Ok(_) => {
-                            // TODO: clean this up
-                            //let text = from_utf8(&data).unwrap();
-                            //println!("RECEIVED MESSAGE FROM OTHER PLAYER: {}", text);
                             tx_client_canvas.send(data);
                         },
                         Err(e) => {
@@ -191,8 +185,8 @@ fn main() {
                 // process coords to get these two important facts
                 let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
                 // if all is well, and the clicked column isn't full yet, go ahead and send the column id to the server
-                if valid_click && state[0][click_column as usize]==0 {
-                    // add one to click_column to enable server to know when a client is dead
+                if valid_click && state[0][click_column as usize] == 0 {
+                    // add one to click_column to enable server to know when a client is dead - the server will subtract 1 from the column to get the true column id
                     tx_server_client.send(click_column + 1).unwrap();
                 }
             }
@@ -201,13 +195,13 @@ fn main() {
         // handle incoming state change
         match rx_client_canvas.try_recv() {
             // if there is a value waiting in the stream, act on it (modify state)
-            Ok(T) => {
+            Ok(t) => {
                 // first command is always an acknowledgement of self player id
                 if self_player_id == 0 {
                     // set self player id based on data received from server
-                    self_player_id = T[0];
+                    self_player_id = t[0];
                     // set turn indicator colour to match player colour
-                    info_text.0 = T[0] as i32;
+                    info_text.0 = t[0] as i32;
                     // set turn indicator for the first time
                     info_text.1 = match self_player_id {
                         1 => {"Your turn"}
@@ -216,28 +210,29 @@ fn main() {
                     }
                 } else {
                     // apply new instruction to playing field (state)
-                    state[T[0] as usize][T[1] as usize] = T[2] as i32 % 3;
-                    println!("Got new instruction {:?}", T);
+                    state[t[0] as usize][t[1] as usize] = t[2] as i32 % 3;
+                    println!("Got new instruction {:?}", t);
 
-                    if T[2]>2 {
+                    if t[2]>2 {
                         // someone won! - check who won
-                        info_text.1 = match (T[2] - 3) == self_player_id {
+                        info_text.1 = match (t[2] - 3) == self_player_id {
                             true => {"You won!"}
                             false => {"You lost!"}
-                        }
+                        };
+                        // game is now over
+                        game_over = true;
                     } else {
-                        // TODO: is there a better way to do this?
                         // nobody won yet - update turn indicator (the reverse of current value)
                         info_text.1 = match info_text.1 {
-                            "Opponent's turn" => {"Your turn"}
-                            "Your turn" => {"Opponent's turn"}
-                            _ => {"Error_P1"}
+                            "Opponent's turn" => "Your turn",
+                            "Your turn" => "Opponent's turn",
+                            _ => "Error_P1",
                         }
                     }
                 }
             },
             // if not, do nothing
-            Err(E) => {},
+            Err(_) => {},
         }
 
         // draw window and objects/sprites
