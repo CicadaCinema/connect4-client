@@ -3,10 +3,9 @@ extern crate piston_window;
 use piston_window::*;
 use std::thread;
 use std::sync::mpsc;
-use std::net::{TcpStream};
+use std::net::TcpStream;
 use std::io::{Read, Write};
 use std::str::from_utf8;
-use piston_window::ellipse::circle;
 
 // returns an rgba array from integer input using a predefined colour scheme
 fn process_colour(input_colour:i32) -> [f32; 4] {
@@ -19,7 +18,7 @@ fn process_colour(input_colour:i32) -> [f32; 4] {
     }
 }
 
-fn process_mouse_click(state: &mut [[i32; 7]; 6], mouse_coords: [f64; 2]) -> (bool, u8) {
+fn process_mouse_click(mouse_coords: [f64; 2]) -> (bool, u8) {
     let mut click_indexes: [i32; 2] = [-1, -1];
     let mut valid_click = true;
 
@@ -152,7 +151,7 @@ fn main() {
                     data = [0 as u8; 3];
                     match network_stream.read_exact(&mut data) {
                         Ok(_) => {
-                            tx_client_canvas.send(data);
+                            tx_client_canvas.send(data).unwrap();
                         },
                         Err(e) => {
                             println!("Failed to receive data from network (3): {}", e);
@@ -188,7 +187,7 @@ fn main() {
             // if game is over, don't even try to process this input
             if button == MouseButton::Left && !game_over {
                 // process coords to get these two important facts
-                let (valid_click, click_column) = process_mouse_click(&mut state, mouse_coords);
+                let (valid_click, click_column) = process_mouse_click(mouse_coords);
                 // if all is well, and the clicked column isn't full yet, go ahead and send the column id to the server
                 if valid_click && state[0][click_column as usize] == 0 {
                     // add one to click_column to enable server to know when a client is dead - the server will subtract 1 from the column to get the true column id
