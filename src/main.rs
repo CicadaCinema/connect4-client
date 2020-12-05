@@ -6,13 +6,15 @@ use std::sync::mpsc;
 use std::net::{TcpStream};
 use std::io::{Read, Write};
 use std::str::from_utf8;
+use piston_window::ellipse::circle;
 
 // returns an rgba array from integer input using a predefined colour scheme
 fn process_colour(input_colour:i32) -> [f32; 4] {
     match input_colour {
-        0 => [0.0, 0.0, 0.25, 1.0],
-        1 => [0.0, 1.0, 0.0, 1.0],
-        2 => [1.0, 0.0, 0.0, 1.0],
+        0 => color::hex("0b61a1"),
+        1 => color::hex("e73d1d"),
+        2 => color::hex("e8e416"),
+        3 => color::hex("0685cf"),
         _ => [0.0, 0.0, 0.0, 1.0],
     }
 }
@@ -62,6 +64,9 @@ fn main() {
     let mut info_text = (0, "Waiting to start...");
     let mut game_over = false;
 
+    // open two channels
+    // * server > networking thread
+    // * networking thread > graphics thread
     let (tx_server_client, rx_server_client) = mpsc::channel();
     let (tx_client_canvas, rx_client_canvas) = mpsc::channel();
 
@@ -84,10 +89,10 @@ fn main() {
                         // send this over to the main thread so it can update the turn indicator
                         match text {
                             "1" => {
-                                tx_client_canvas.send([1 as u8; 3]);
+                                tx_client_canvas.send([1 as u8; 3]).unwrap();
                             }
                             "2" => {
-                                tx_client_canvas.send([2 as u8; 3]);
+                                tx_client_canvas.send([2 as u8; 3]).unwrap();
                             }
                             _ => {}
                         }
@@ -113,7 +118,7 @@ fn main() {
                     data = [0 as u8; 3];
                     match network_stream.read_exact(&mut data) {
                         Ok(_) => {
-                            tx_client_canvas.send(data);
+                            tx_client_canvas.send(data).unwrap();
                         },
                         Err(e) => {
                             println!("Failed to receive data from network (1): {}", e);
@@ -125,7 +130,7 @@ fn main() {
                     data = [0 as u8; 3];
                     match network_stream.read_exact(&mut data) {
                         Ok(_) => {
-                            tx_client_canvas.send(data);
+                            tx_client_canvas.send(data).unwrap();
                         },
                         Err(e) => {
                             println!("Failed to receive data from network (2): {}", e);
@@ -211,7 +216,7 @@ fn main() {
                 } else {
                     // apply new instruction to playing field (state)
                     state[t[0] as usize][t[1] as usize] = t[2] as i32 % 3;
-                    println!("Got new instruction {:?}", t);
+                    //println!("Got new instruction {:?}", t);
 
                     if t[2]>2 {
                         // someone won! - check who won
@@ -240,6 +245,12 @@ fn main() {
             // fill window with background colour
             clear([1.0; 4], graphics);
 
+            // draw game board
+            rectangle(process_colour(3),
+                    [0.0, 0.0, 7.0*55.0 + 5.0, 6.0*55.0 + 5.0],
+                    context.transform,
+                    graphics);
+
             // cycle through elements of state array
             for row_index in 0..(state.len()) {
                 for column_index in 0..(state[0].len()) {
@@ -248,10 +259,10 @@ fn main() {
                     let y_origin = 5.0 + (row_index as f64) * 55.0;
 
                     // draw this element in the correct colour, with a fixed size
-                    rectangle(process_colour(state[row_index][column_index]),
-                              [x_origin, y_origin, 50.0, 50.0],
-                              context.transform,
-                              graphics);
+                    ellipse(process_colour(state[row_index][column_index]),
+                            [x_origin, y_origin, 50.0, 50.0],
+                            context.transform,
+                            graphics);
                 }
             }
 
