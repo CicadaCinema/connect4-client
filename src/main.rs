@@ -25,7 +25,7 @@ fn process_mouse_click(mouse_coords: [f64; 2]) -> (bool, u8) {
     // determine indexes of mouse click
     for coord_index in 0..mouse_coords.len() {
         // remove offset (subtract 5)
-        let coord: i32 = (mouse_coords[coord_index] as i32) - 5;
+        let coord: i32 = (mouse_coords[coord_index] as i32) - 5 - 10;
 
         if coord % 55 > 50 {
             // if modulo 55 is greater than 50, no click
@@ -168,7 +168,7 @@ fn main() {
 
     // set up Piston Window
     let mut window: PistonWindow =
-        WindowSettings::new("Connect 4", [5 + 55*7, 480])
+        WindowSettings::new("Connect 4", [20 + 5 + 55*7, 405])
             .exit_on_esc(true).build().unwrap();
 
     // load font
@@ -246,7 +246,7 @@ fn main() {
 
             // draw game board
             rectangle(process_colour(3),
-                    [0.0, 0.0, 7.0*55.0 + 5.0, 6.0*55.0 + 5.0],
+                    [10.0, 10.0, 7.0*55.0 + 5.0, 6.0*55.0 + 5.0],
                     context.transform,
                     graphics);
 
@@ -254,8 +254,8 @@ fn main() {
             for row_index in 0..(state.len()) {
                 for column_index in 0..(state[0].len()) {
                     // calculate origins of this element
-                    let x_origin = 5.0 + (column_index as f64) * 55.0;
-                    let y_origin = 5.0 + (row_index as f64) * 55.0;
+                    let x_origin = 10.0 + 5.0 + (column_index as f64) * 55.0;
+                    let y_origin = 10.0 + 5.0 + (row_index as f64) * 55.0;
 
                     // draw this element in the correct colour, with a fixed size
                     ellipse(process_colour(state[row_index][column_index]),
@@ -270,7 +270,7 @@ fn main() {
                 process_colour(info_text.0), 32,
                 info_text.1,
                 &mut glyphs,
-                context.transform.trans(10.0, 400.0),
+                context.transform.trans(10.0, 385.0),
                 graphics
             ).unwrap();
 
