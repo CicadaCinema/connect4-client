@@ -24,7 +24,7 @@ fn process_mouse_click(mouse_coords: [f64; 2]) -> (bool, u8) {
 
     // determine indexes of mouse click
     for coord_index in 0..mouse_coords.len() {
-        // remove offset (subtract 5)
+        // remove offset (subtract 15)
         let coord: i32 = (mouse_coords[coord_index] as i32) - 5 - 10;
 
         if coord % 55 > 50 {
@@ -74,8 +74,7 @@ fn main() {
         // stores data received from stream
         let mut data = [0 as u8; 3];
 
-        // server ip: 165.232.32.238
-        // local testing: localhost
+        // your server ip goes HERE!
         match TcpStream::connect("localhost:32032") {
             Ok(mut network_stream) => {
                 println!("Successfully connected to server in port 32032");
