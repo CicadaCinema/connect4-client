@@ -264,12 +264,18 @@ fn main() {
                 }
             }
 
-            // display turn indicator with the correct colour and text
+            // player indicator - use appropriate colour
+            rectangle(process_colour(info_text.0),
+                      [10.0, 6.0*55.0 + 5.0 + 20.0, 7.0*55.0 + 5.0, 40.0],
+                      context.transform,
+                      graphics);
+
+            // display turn indicator - use appropriate text
             text(
-                process_colour(info_text.0), 32,
+                [0.0, 0.0, 0.0, 1.0], 32,
                 info_text.1,
                 &mut glyphs,
-                context.transform.trans(10.0, 385.0),
+                context.transform.trans(15.0, 385.0),
                 graphics
             ).unwrap();
 
