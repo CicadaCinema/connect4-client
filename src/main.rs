@@ -14,7 +14,7 @@ fn process_colour(input_colour:i32) -> [f32; 4] {
         1 => color::hex("e73d1d"),
         2 => color::hex("e8e416"),
         3 => color::hex("0685cf"),
-        _ => [0.0, 0.0, 0.0, 1.0],
+        _ => color::hex("ff69b4"),
     }
 }
 
@@ -168,7 +168,9 @@ fn main() {
     // set up Piston Window
     let mut window: PistonWindow =
         WindowSettings::new("Connect 4", [20 + 5 + 55*7, 405])
-            .exit_on_esc(true).build().unwrap();
+            .exit_on_esc(true)
+            .resizable(false)
+            .build().unwrap();
 
     // load font
     let mut glyphs = window.load_font("RobotoSlab-Regular.ttf").unwrap();

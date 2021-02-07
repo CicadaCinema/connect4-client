@@ -13,7 +13,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="a8f797a1-4eb9-4ad1-bcb7-bfbc0de805c8" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/src/main.rs" afterDir="false" />
     </list>
     <list id="7cd90536-3cf9-444a-803a-6a451496c837" name="Secret server IP" comment="Do not commit this, ever!">
@@ -35,9 +34,7 @@
       <ranges>
         <range start1="16" end1="17" start2="16" end2="17" changelist="a8f797a1-4eb9-4ad1-bcb7-bfbc0de805c8" />
         <range start1="77" end1="78" start2="77" end2="78" changelist="7cd90536-3cf9-444a-803a-6a451496c837" />
-        <range start1="266" end1="267" start2="266" end2="273" changelist="a8f797a1-4eb9-4ad1-bcb7-bfbc0de805c8" />
-        <range start1="268" end1="269" start2="274" end2="275" changelist="a8f797a1-4eb9-4ad1-bcb7-bfbc0de805c8" />
-        <range start1="271" end1="272" start2="277" end2="278" changelist="a8f797a1-4eb9-4ad1-bcb7-bfbc0de805c8" />
+        <range start1="170" end1="171" start2="170" end2="173" changelist="a8f797a1-4eb9-4ad1-bcb7-bfbc0de805c8" />
       </ranges>
     </file>
   </component>
@@ -110,18 +107,19 @@
     <MESSAGE value="Fix some more compiler warnings" />
     <MESSAGE value="Make window sizes/padding all nice" />
     <MESSAGE value="correct IP shenanigans" />
-    <option name="LAST_COMMIT_MESSAGE" value="correct IP shenanigans" />
+    <MESSAGE value="Add indicator bar instead of colouring the text" />
+    <option name="LAST_COMMIT_MESSAGE" value="Add indicator bar instead of colouring the text" />
   </component>
   <component name="WindowStateProjectService">
     <state x="555" y="197" width="810" height="716" key="#Plugins" timestamp="1604684225335">
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="555" y="197" width="810" height="716" key="#Plugins/0.27.1920.1053@0.27.1920.1053" timestamp="1604684225335" />
-    <state x="293" y="115" width="1238" height="831" key="CommitChangelistDialog2" timestamp="1612374432854">
+    <state x="293" y="115" width="1238" height="831" key="CommitChangelistDialog2" timestamp="1612657941917">
       <screen x="0" y="27" width="1920" height="1053" />
     </state>
     <state x="141" y="66" width="855" height="845" key="CommitChangelistDialog2/0.0.3200.1080@0.0.3200.1080" timestamp="1605461338540" />
-    <state x="293" y="115" width="1238" height="831" key="CommitChangelistDialog2/0.27.1920.1053@0.27.1920.1053" timestamp="1612374432854" />
+    <state x="293" y="115" width="1238" height="831" key="CommitChangelistDialog2/0.27.1920.1053@0.27.1920.1053" timestamp="1612657941917" />
     <state x="195" y="86" width="889" height="883" key="CommitChangelistDialog2/1280.0.1920.1080/0.0.1280.1024@0.0.1280.1024" timestamp="1605990487970" />
     <state x="0" y="132" width="1280" height="892" key="CommitChangelistDialog2/1280.0.1920.1080/0.27.1280.997@1280.0.1920.1080" timestamp="1606295469300" />
     <state x="743" y="311" width="434" height="488" key="FileChooserDialogImpl" timestamp="1604692876680">
